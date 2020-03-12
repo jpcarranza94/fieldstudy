@@ -1,0 +1,2352 @@
+---
+title: "Analisis Tesis"
+author: "Juan Pablo Carranza Hurtado"
+date: "July 22, 2019"
+output: html_document
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(lubridate)
+library(weights)
+library(wesanderson)
+library(mase)
+library(questionr)
+library(radiant.data)
+library(spatstat)
+library(reldist)
+```
+
+Cargar base de datos de Trabajo de campo en formato CSV, utilizando "," como el separador, y con headers como el nombre de las columnas 
+
+```{r}
+trabajocamporaw<- read.csv("TrabajoDeCampo.csv", header = TRUE, sep = ",")
+```
+
+Caracterizacion de no respuesta
+
+Creacion de dataframe para no respuesta
+
+```{r}
+
+norespdata <- trabajocamporaw %>%
+  filter(!is.na(noresp))
+```
+
+Caracterizacion general de no respuesta
+
+```{r}
+
+norespdata %>%
+  group_by(noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))%>%
+  ggplot(aes(x = as.factor(noresp), y = n)) + geom_bar(stat = "identity", color = "black", fill = "grey", width = 0.70) + theme_minimal() + scale_x_discrete(name = "Tipo de no respuesta", labels= c("Deserción", "Negación","Ausencia")) +  scale_y_continuous(name = "Frecuencia") + geom_text(aes(label = n), position = position_dodge(0.7), size = 4, vjust = -0.5)+theme (axis.text.x = element_text(size = 11.5))
+```
+
+
+Caracterizacion por sexo de no respuesta:
+```{r}
+
+norespdata %>%
+  group_by(sexo, noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))%>%
+ggplot(aes(x = as.factor(sexo), y = n, fill = as.factor(noresp))) + geom_bar(stat = "identity", color = "black", width = 0.70, position = "dodge") + theme_minimal() + scale_fill_manual( name = "No respuesta", labels= c("Deserción", "Negación", "Ausencia"), values = c("grey75", "grey50", "grey25")) + scale_x_discrete(name = "Sexo", labels= c("Masculino", "Femenino")) + scale_y_continuous(name = "Frecuencia") + geom_text(aes(label = n), position = position_dodge(0.7), size = 3.5, vjust = -0.5)
+```
+
+
+Caracterización por edad de no respuesta
+
+```{r}
+#No respuesta por edad
+norespdata %>%
+  group_by(edad)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+#Categorias de no respuesta por edad
+norespdata %>%
+  group_by(edad, noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))%>%
+
+ggplot(aes(x = as.factor(edad), y = n, fill = as.factor(noresp))) + geom_bar(stat = "identity", color = "black", width = 0.70, position = "dodge") + theme_minimal() + scale_fill_manual( name = "No respuesta", labels= c("Deserción", "Negación", "Ausencia"), values = c("grey75", "grey50", "grey25")) + scale_x_discrete(name = "Edad") + scale_y_continuous(name = "Frecuencia") + geom_text(aes(label = n), position = position_dodge(0.7), size = 3.5, vjust = -0.5)
+
+```
+
+Caracterizacion por sector historico de no respuesta
+
+```{r}
+#No respuesta por edad
+norespdata %>%
+  group_by(sectorhist)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+#Categorias de no respuesta por edad
+norespdata %>%
+  group_by(sectorhist, noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+
+a <- ggplot(norespdata, aes(x = sectorhist, fill = as.factor(noresp))) + geom_bar(color = "black", width = 0.70, position = "dodge") + theme_minimal() + scale_fill_manual( name = "No respuesta", labels= c("Deserción", "Negación", "Ausencia"), values = c("gray75", "gray50", "gray25")) + scale_x_discrete(name = "Sector Histórico") + scale_y_continuous(name = "Frecuencia")
+
+barplotfunc <- function(plot){
+
+b<- ggplot_build(plot)
+b <- b$data[[1]]
+
+plot + geom_text(data = b, aes(label = count, x = x, y = y ), inherit.aes = FALSE, position = position_dodge(0.70), vjust= -0.5, size =3.5)
+}
+
+barplotfunc(plot = a)
+```
+
+Caracterizacion por area historica de no respuesta
+
+```{r}
+#No respuesta por edad
+norespdata %>%
+  group_by(areahist)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+
+#Categorias de no respuesta por edad
+norespdata %>%
+  group_by(areahist, noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+
+a<-ggplot(norespdata, aes(x = areahist, fill = as.factor(noresp))) + geom_bar(color = "black", width = 0.70, position = "dodge") + theme_minimal() + scale_fill_manual( name = "No respuesta", labels= c("Deserción", "Negación", "Ausencia"), values = c("grey75", "grey50", "grey25")) + scale_x_discrete(name = "Area Histórica") + scale_y_continuous(name = "Frecuencia")
+
+barplotfunc(plot = a)
+
+
+
+```
+
+Caracterizacion por grado de no respuesta
+
+```{r}
+#No respuesta por edad
+norespdata %>%
+  group_by(grado)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+
+#Categorias de no respuesta por edad
+norespdata %>%
+  group_by(grado, noresp)%>%
+  summarise( n = n())%>%
+  mutate( rfreq= n/sum(n))
+
+barplotfunc( plot = ggplot(norespdata, aes(x = as.factor(grado), fill = as.factor(noresp))) + geom_bar(color = "black", width = 0.70, position = "dodge") + theme_minimal() + scale_fill_manual( name = "No respuesta", labels= c("Deserción", "Negación", "Ausencia"), values = c("grey75", "grey50", "grey25")) + scale_x_discrete(name = "Grado") + scale_y_continuous(name = "Frecuencia"))
+
+
+```
+
+
+
+Creacion de data frame filtrando datos no válidos y ausentes
+
+```{r}
+
+trabajocampo <- trabajocamporaw %>%
+  filter(!is.na(sweightcorrected))
+
+```
+
+```{r}
+#Calculate corrected inclusion probability, accounting for non response
+trabajocampo <- trabajocampo %>%
+  mutate(inclprobcorr = (1/sweightcorrected))
+
+```
+
+Tabla de frecuencias absolutas y relativas para cada una de las variables demográficas utilizadas en el estudio. Datos se encuentran excluidos. Sin poderación de datos, y a continuación de cada una con datos ponderados. 
+
+```{r}
+trabajocampo %>%
+  group_by(sexo)%>%
+  summarise( n = n())%>%
+  mutate (rfreq = n/sum(n))
+wpct(trabajocampo$sexo, trabajocampo$sweightcorrected)
+
+
+trabajocampo %>%
+  group_by(areahist)%>%
+  summarise( n = n())%>%
+  mutate (rfreq = n/sum(n))
+wpct(trabajocampo$areahist, trabajocampo$sweightcorrected)
+
+
+trabajocampo %>%
+  group_by(sectorhist)%>%
+  summarise( n = n())%>%
+  mutate (rfreq = n/sum(n))
+wpct(trabajocampo$sectorhist, trabajocampo$sweightcorrected)
+
+trabajocampo %>%
+  group_by(grado)%>%
+  summarise( n = n())%>%
+  mutate (rfreq = n/sum(n))
+wpct(trabajocampo$grado, trabajocampo$sweightcorrected)
+
+trabajocampo %>%
+  group_by(edada.os)%>%
+  summarise( n = n())%>%
+  mutate (rfreq = n/sum(n))
+wpct(trabajocampo$edada.os, trabajocampo$sweightcorrected)
+```
+
+Cálculo de la proporción de estudiantes con sobrepeso y obesidad, a continuación de los datos corregidos
+
+```{r}
+
+
+wpct(trabajocampo$estnutri, trabajocampo$sweightcorrected)
+
+estnutrilab<- c("Delgadez extrema", "Delgadez", "Normal", "Sobrepeso", "Obesidad")
+
+a<- ggplot(trabajocampo, aes(x = estnutri, weight = sweightcorrected)) + geom_bar(color = "black",fill = "grey", width = 0.70) + scale_x_discrete(name = "Estado Nutricional", limits = estnutrilab) + scale_y_continuous(name = "Total corregido por factor de expansión") + theme_minimal() + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.text.x = element_text(size = 11.5), plot.caption = element_text(hjust = 0)) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+b<-ggplot_build(a)
+b<- b$data[[1]]
+
+a + geom_text(data = b, inherit.aes = FALSE, aes(label= paste((round((count/ sum(count)*100), digits = 2)), "%", sep= ""), x = x, y = y), vjust = -0.5, size = 4)
+
+```
+
+Calculo de la proporcion de estudiantes con sobrepeso y obesidad para sexo
+
+```{r}
+trabajocampo <-trabajocampo %>%
+  mutate( sobob = ifelse(estnutri == "Obesidad" | estnutri == "Sobrepeso", 1, 0))
+
+trabajocampo$estnutri <- as.factor(trabajocampo$estnutri) 
+
+trabajocampo$estnutri <- factor( x = trabajocampo$estnutri, levels = estnutrilab)
+
+print('Proporción ajustada de mujeres con sobrepeso y obesidad')
+FemProp<- subset(trabajocampo, sexo == "2", select= c(cluster,upm,estnutri, puntajez, paqa, afhc,sweightcorrected, inclprobcorr, sobob))
+percent2<-wpct(FemProp$estnutri, FemProp$sweightcorrected)
+percent2
+
+print('Proporción ajustada de hombres con sobrepeso y obesidad')
+MascProp <- subset(trabajocampo, sexo == "1", select = c(cluster, upm,estnutri, puntajez, paqa, afhc,sweightcorrected, inclprobcorr, sobob))
+percent1<-wpct(MascProp$estnutri, MascProp$sweightcorrected)
+percent1
+
+labels <- c("1" = "Masculino", "2" = "Femenino")
+greyscalesobre <- c("grey85", "grey55", "grey40", "grey27", "grey1")
+
+
+
+ggplot(trabajocampo, aes(x = as.factor(sexo), weight = sweightcorrected, fill = estnutri)) +  geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge", color = "black" ) +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..], label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),
+            stat="count", position=position_dodge(0.9), vjust=-0.5, size = 3.2) + scale_x_discrete(name = "Sexo", labels = c("Masculino", "Femenino")) + scale_y_continuous(name = "Total ajustado por factor de expansión") + theme_minimal() + theme(axis.text.x = element_text( size = 11.5)) + scale_fill_manual(name = "Estado nutricional", values= greyscalesobre , limits = estnutrilab) + theme(axis.text.y = element_blank(), axis.title.y = element_blank(), axis.text.x = element_text(size = 11.5), plot.caption = element_text(hjust = 0), legend.key.width = unit(0.4,"cm"), legend.title = element_text(size = 9), legend.text = element_text(size = 8)) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+
+```
+
+
+
+
+
+
+
+Calculo de la proporcion de estudiantes con sobrepeso y obesidad para area historica
+
+```{r}
+print('Proporción ajustada de rural con sobrepeso y obesidad')
+RuralProp<- subset(trabajocampo, areahist == "RURAL", select= c(cluster,upm,estnutri,puntajez, paqa, afhc, sweightcorrected,inclprobcorr, sobob))
+percent1 <- wpct(RuralProp$estnutri, RuralProp$sweightcorrected)
+percent1
+
+print('Proporción ajustada de urbano con sobrepeso y obesidad')
+UrbanProp <- subset(trabajocampo, areahist == "URBANO", select = c(cluster,upm,estnutri,puntajez, paqa,afhc, sweightcorrected,inclprobcorr, sobob))
+percent2 <- wpct(UrbanProp$estnutri, UrbanProp$sweightcorrected)
+percent2
+
+
+a<- ggplot(trabajocampo, aes(x = areahist, weight = sweightcorrected, fill = estnutri)) + geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge", color = "black" ) +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..], label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),
+            stat="count", position=position_dodge(0.9), vjust=-0.5, size = 3.2) + scale_x_discrete(name = "Area Histórica", labels  = c("Rural", "Urbano")) + scale_y_continuous(name = "Total corregido por factor de expansión") + theme_minimal() + theme(axis.text.x = element_text( size = 11.5)) + scale_fill_manual(name = "Estado nutricional", values = greyscalesobre , limits = estnutrilab) + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.text.x = element_text(size = 11.5), plot.caption = element_text(hjust = 0), legend.key.width = unit(0.4,"cm"), legend.title = element_text(size = 9), legend.text = element_text(size = 8)) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+
+a
+
+```
+
+Calculo de la proporción de estudiantes con sobrepeso y obesidad para sector histórico
+
+```{r}
+print('Proporción ajustada de oficial con sobrepeso y obesidad')
+OficialProp<- subset(trabajocampo, sectorhist == "OFICIAL", select= c(cluster,upm,estnutri,puntajez, paqa,afhc,sweightcorrected,inclprobcorr, sobob))
+percent2 <- wpct(OficialProp$estnutri, OficialProp$sweightcorrected)
+percent2
+print('Proporción ajustada de cooperativa con sobrepeso y obesidad')
+CoopProp <- subset(trabajocampo, sectorhist == "COOPERATIVA", select = c(cluster, upm, estnutri,puntajez,paqa,afhc, sweightcorrected, inclprobcorr,sobob))
+percent1 <- wpct(CoopProp$estnutri, CoopProp$sweightcorrected)
+percent1
+print('Proporción ajustada de privado con sobrepeso y obesidad')
+PrivProp <- subset(trabajocampo, sectorhist == "PRIVADO", select = c(cluster, upm, estnutri,puntajez,paqa,afhc, sweightcorrected, inclprobcorr,sobob))
+percent3 <- wpct(PrivProp$estnutri, PrivProp$sweightcorrected)
+percent3
+
+a<-ggplot(trabajocampo, aes(x = sectorhist, weight = sweightcorrected, fill = estnutri))+ geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge", color = "black" ) +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..], label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),
+            stat="count", position=position_dodge(0.9), vjust=-0.5, size = 2.5) + scale_x_discrete(name = "Sector Histórico", labels = c("Cooperativa", "Oficial", "Privado")) + scale_y_continuous(name = "Total corregido por factor de expansión") + theme_minimal() + theme(axis.text.x = element_text( size = 11),legend.title = element_text(size = 9), legend.text = element_text(size = 8)) + scale_fill_manual(name = "Estado nutricional", values = greyscalesobre, limits = estnutrilab) + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.text.x = element_text(size = 11), plot.caption = element_text(hjust = 0), legend.key.width = unit(0.4,"cm")) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+a
+
+```
+
+Calculo de la proporción de estudiantes con sobrepeso y obesidad para grado
+
+```{r}
+print('Proporción ajustada de 1ero con sobrepeso y obesidad')
+Prop1<- subset(trabajocampo, grado == "1", select= c(cluster, upm,estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr,sobob ))
+percent1<-wpct(Prop1$estnutri, Prop1$sweightcorrected)
+percent1
+
+print('Proporción ajustada de 2do con sobrepeso y obesidad')
+Prop2 <- subset(trabajocampo, grado == "2", select = c(cluster, upm,estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent2<-wpct(Prop2$estnutri, Prop2$sweightcorrected)
+percent2
+
+print('Proporción ajustada de 3ero con sobrepeso y obesidad')
+Prop3 <- subset(trabajocampo, grado == "3", select = c(cluster,upm,estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent3<-wpct(Prop3$estnutri, Prop3$sweightcorrected)
+percent3
+
+a<-ggplot(trabajocampo, aes(x = as.factor(grado), weight = sweightcorrected, fill = estnutri)) + geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position="dodge", color = "black") +
+  geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..], label=scales::percent(..count../tapply(..count.., ..x.. ,sum)[..x..]) ),
+            stat="count", position=position_dodge(0.9), vjust=-0.5, size = 2.5)  + scale_x_discrete(name = "Grado Escolar") + scale_y_continuous(name = "Total corregido por factor de expansión") + theme_minimal() + theme(axis.text.x = element_text( size = 11), legend.title = element_text(size = 9), legend.text = element_text(size = 8)) + scale_fill_manual(name = "Estado nutricional", values = greyscalesobre, limits = estnutrilab) + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.text.x = element_text(size = 11), plot.caption = element_text(hjust = 0), legend.key.width = unit(0.4,"cm")) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+
+a
+
+```
+
+
+Calculo de la proporción de estudiantes con sobrepeso y obesidad para grado
+
+```{r}
+print('Proporción ajustada de 12 con sobrepeso y obesidad')
+Prop12<- subset(trabajocampo, edada.os == "12", select= c(cluster, upm, estnutri,puntajez, paqa,afhc,sweightcorrected, inclprobcorr, sobob ))
+percent1<-wpct(Prop12$estnutri, Prop12$sweightcorrected)
+percent1
+print('Proporción ajustada de 13 con sobrepeso y obesidad')
+Prop13 <- subset(trabajocampo, edada.os == "13", select = c(cluster,upm, estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent2<-wpct(Prop13$estnutri, Prop13$sweightcorrected)
+percent2
+print('Proporción ajustada de 14 con sobrepeso y obesidad')
+Prop14 <- subset(trabajocampo, edada.os == "14", select = c(cluster, upm, estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent3<-wpct(Prop14$estnutri, Prop14$sweightcorrected)
+percent3
+print('Proporción ajustada de 15 con sobrepeso y obesidad')
+Prop15 <- subset(trabajocampo, edada.os == "15", select = c(cluster,upm, estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent4<-wpct(Prop15$estnutri, Prop15$sweightcorrected)
+percent4
+
+print('Proporción ajustada de 16 con sobrepeso y obesidad')
+Prop16 <- subset(trabajocampo, edada.os == "16", select = c(cluster,upm,estnutri,puntajez,paqa,afhc,sweightcorrected, inclprobcorr, sobob))
+percent5<-wpct(Prop16$estnutri, Prop16$sweightcorrected)
+percent5
+
+a<- ggplot(trabajocampo, aes(x = as.factor(edada.os), weight = sweightcorrected, fill = estnutri)) + geom_bar(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..]), position=position_dodge(), color = "black") + geom_text(aes( y=..count../tapply(..count.., ..x.. ,sum)[..x..], label=scales::percent((..count../tapply(..count.., ..x.. ,sum)[..x..]), accuracy = 1, suffix = "%")),
+            stat="count", position=position_dodge(0.9), vjust=-0.5, size = 2.5) + scale_x_discrete(name = "Edad") + scale_y_continuous(name = "Total corregido por factor de expansión") + theme_minimal() + theme(axis.text.x = element_text( size = 11), legend.title = element_text(size = 9), legend.text = element_text(size = 8),legend.key.width = unit(0.4,"cm")) + scale_fill_manual(name = "Estado nutricional", values = greyscalesobre, limits = estnutrilab)+ theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.text.x = element_text(size = 11), plot.caption = element_text(hjust = 0)) + labs(caption = "*Porcentajes calculados con factor de expansión") 
+
+a
+
+
+
+```
+
+ANALISIS DE DATOS CUANTITATIVOS:
+
+Para iniciar el analisis de datos cuantitativos se utilizara una representacion grafica de las variables cuantitativas del estudio. Se iniciara creando histogramas para la representacion de las distribuciones del puntaje z para cada variable sociodemografica.
+
+ANALISIS GRAFICO DE PUNTAJE Z 
+
+Histograma Y QQPLOT de distribucion general de puntaje z
+
+```{r}
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "grey", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5 ,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal()
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")
+
+```
+
+Histograma Y QQPLOT de distribucion de puntaje z para sexo
+
+```{r}
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "grey", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sexo, labeller = labeller(sexo = labels))
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")+ facet_wrap(~sexo, labeller = labeller(sexo = labels)) 
+
+ggplot(trabajocampo, aes(y = puntajez, x = as.factor(sexo), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sexo", labels = c("Masculino", "Femenino")) + scale_y_continuous( name = "Puntaje Z", breaks=seq(-6,5,1)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de puntaje z para area historica
+
+```{r}
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(y = puntajez, x = areahist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Area Histórica") + scale_y_continuous( name = "Puntaje Z", breaks=seq(-6,5,1)) + theme_minimal()
+
+
+```
+
+Histograma y QQPLOT de distribucion de puntaje z para sector historico
+
+```{r}
+
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(y = puntajez, x = sectorhist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sector histórico") + scale_y_continuous( name = "Puntaje Z", breaks=seq(-6,5,1)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de puntaje z para grado
+
+```{r}
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(grado))
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~grado)
+
+ggplot(trabajocampo, aes(y = puntajez, x = as.factor(grado), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Grado escolar") + scale_y_continuous( name = "Puntaje Z", breaks=seq(-6,5,1)) + theme_minimal()
+```
+
+Histograma  y QQPLOT de distribucion de puntaje z para edad
+
+```{r}
+ggplot(trabajocampo, aes(x = puntajez, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje Z", breaks=seq(-6,5,1)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(sample = puntajez, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(y = puntajez, x = as.factor(edada.os), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Edad en años") + scale_y_continuous( name = "Puntaje Z", breaks=seq(-6,5,1)) + theme_minimal()
+```
+
+ANALISIS GRAFICO DE PAQ A
+
+
+Distribucion de toda la poblacion de PAQ - A
+
+```{r}
+
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(1,5,1), limits = c(1, 5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal()
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")
+
+```
+
+Histograma Y QQPLOT de distribucion de puntaje PAQA para sexo
+
+```{r}
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sexo, labeller = labeller(sexo = labels))
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")+ facet_wrap(~sexo, labeller = labeller(sexo = labels)) 
+
+ggplot(trabajocampo, aes(y = paqa, x = as.factor(sexo), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sexo", labels = c("Masculino", "Femenino")) + scale_y_continuous( name = "Puntaje PAQ-A", breaks=seq(-0,5,1), limits = c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de puntaje PAQA para area historica
+
+```{r}
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(y = paqa, x = areahist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Area Histórica") + scale_y_continuous( name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits =c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de PAQA para sector historico
+
+```{r}
+
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(y = paqa, x = sectorhist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sector histórico") + scale_y_continuous( name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de PAQA para grado
+
+```{r}
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(grado))
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~grado)
+
+ggplot(trabajocampo, aes(y = paqa, x = as.factor(grado), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Grado escolar") + scale_y_continuous( name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+```
+
+Histograma  y QQPLOT de distribucion de PAQA para edad
+
+```{r}
+ggplot(trabajocampo, aes(x = paqa, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(sample = paqa, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(y = paqa, x = as.factor(edada.os), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Edad en años") + scale_y_continuous( name = "Puntaje PAQ-A", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+```
+
+
+ANALISIS GRAFICO DE AFHC
+
+
+Distribucion de toda la poblacion de AFHC
+
+```{r}
+
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(1,5,1), limits = c(1, 5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal()
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")
+
+```
+
+Histograma Y QQPLOT de distribucion de puntaje AFHC para sexo
+
+```{r}
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sexo, labeller = labeller(sexo = labels))
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra")+ facet_wrap(~sexo, labeller = labeller(sexo = labels)) 
+
+ggplot(trabajocampo, aes(y = afhc, x = as.factor(sexo), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sexo", labels = c("Masculino", "Femenino")) + scale_y_continuous( name = "Puntaje AFHC", breaks=seq(-0,5,1), limits = c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de puntaje AFHC para area historica
+
+```{r}
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~areahist)
+
+ggplot(trabajocampo, aes(y = afhc, x = areahist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Area Histórica") + scale_y_continuous( name = "Puntaje AFHC", breaks=seq(0,5,1), limits =c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de AFHC para sector historico
+
+```{r}
+
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~sectorhist)
+
+ggplot(trabajocampo, aes(y = afhc, x = sectorhist, weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Sector histórico") + scale_y_continuous( name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+
+```
+
+Histograma y QQPLOT de distribucion de AFHC para grado
+
+```{r}
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(grado))
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~grado)
+
+ggplot(trabajocampo, aes(y = afhc, x = as.factor(grado), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Grado escolar") + scale_y_continuous( name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+```
+
+Histograma  y QQPLOT de distribucion de AFHC para edad
+
+```{r}
+ggplot(trabajocampo, aes(x = afhc, weight = sweightcorrected)) + geom_histogram( bins = 22, fill = "white", color = "black") + scale_x_continuous(name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + scale_y_continuous(name = "Frecuencia ajustada por factor de expansión") + theme_minimal() + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(sample = afhc, weight = sweightcorrected)) + geom_qq() + geom_qq_line()  + theme_minimal() + scale_x_continuous(name = "Cuantiles teóricos") + scale_y_continuous(name = "Cuantiles de la muestra") + facet_wrap(~as.factor(edada.os))
+
+ggplot(trabajocampo, aes(y = afhc, x = as.factor(edada.os), weight = sweightcorrected)) + geom_boxplot() + scale_x_discrete( name = "Edad en años") + scale_y_continuous( name = "Puntaje AFHC", breaks=seq(0,5,1), limits = c(0,5)) + theme_minimal()
+
+```
+
+ANALISIS NUMERICO DE PUNTAJE Z
+
+Estadisticas de resumen de puntaje z para toda la poblacion
+```{r}
+trabajocampo %>%
+  summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+
+```
+
+Estadisticas de resumen de puntaje z por sexo
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(sexo))%>%
+  summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+```
+
+Estadisticas de resumen de puntaje z por area historica
+
+```{r}
+
+trabajocampo %>%
+  group_by(areahist)%>%
+  summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+```
+
+Estadisticas de resumen de puntaje z por sector historico
+
+```{r}
+
+trabajocampo %>%
+  group_by(sectorhist)%>%
+    summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+
+```
+
+Estadisticas de resumen de puntaje z por grado
+
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(grado))%>%
+   summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+```
+
+Estadisticas de resumen de puntaje z por edad en años
+
+```{r}
+
+trabajocampo %>%
+  group_by(edada.os)%>%
+  summarise(meanz=weighted.mean(puntajez, sweightcorrected), sdz=weighted.sd(puntajez, sweightcorrected), medianz = weighted.median(puntajez, w=sweightcorrected), IQRz25 = wtd.quantile(puntajez, q = 0.25, weight=sweightcorrected), IQRz75 = wtd.quantile(puntajez, q = 0.75, weight = sweightcorrected), maxz = max(puntajez), minz = min(puntajez))
+```
+
+
+ANALISIS NUMERICO DE PUNTAJE PAQA
+
+Estadisticas de resumen de puntaje PAQA para toda la poblacion
+```{r}
+trabajocampo %>%
+  summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+
+```
+
+Estadisticas de resumen de PAQA por sexo
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(sexo))%>%
+ summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+```
+
+Estadisticas de resumen de PAQA por area historica
+
+```{r}
+
+trabajocampo %>%
+  group_by(areahist)%>%
+  summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+```
+
+Estadisticas de resumen de PAQA por sector historico
+
+```{r}
+
+trabajocampo %>%
+  group_by(sectorhist)%>%
+ summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+```
+
+Estadisticas de resumen de PAQA por grado
+
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(grado))%>%
+ summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+```
+
+Estadisticas de resumen de PAQA por edad en años
+
+```{r}
+
+trabajocampo %>%
+  group_by(edada.os)%>%
+ summarise(meanpaqa=weighted.mean(paqa, sweightcorrected), sdpaqa=weighted.sd(paqa, sweightcorrected), medianpaqa = weighted.median(paqa, w=sweightcorrected), IQRpaqa25 = wtd.quantile(paqa, q = 0.25, weight=sweightcorrected), IQRpaqa75 = wtd.quantile(paqa, q = 0.75, weight = sweightcorrected), maxpaqa = max(paqa), minpaqa = min(paqa))
+```
+
+
+
+ANALISIS NUMERICO DE PUNTAJE AFHC
+
+Estadisticas de resumen de puntaje AFHC para toda la poblacion
+```{r}
+trabajocampo %>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+
+```
+
+Estadisticas de resumen de AFHC por sexo
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(sexo))%>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+```
+
+Estadisticas de resumen de AFHC por area historica
+
+```{r}
+
+trabajocampo %>%
+  group_by(areahist)%>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+```
+
+Estadisticas de resumen de AFHC por sector historico
+
+```{r}
+
+trabajocampo %>%
+  group_by(sectorhist)%>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+```
+
+Estadisticas de resumen de AFHC por grado
+
+```{r}
+
+trabajocampo %>%
+  group_by(as.factor(grado))%>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+```
+
+Estadisticas de resumen de AFHC por edad en años
+
+```{r}
+
+trabajocampo %>%
+  group_by(edada.os)%>%
+  summarise(meanafhc =weighted.mean(afhc, sweightcorrected), sdafhc=weighted.sd(afhc, sweightcorrected), medianafhc = weighted.median(afhc, w=sweightcorrected), IQRafhc25 = wtd.quantile(afhc,q=0.25,  weight=sweightcorrected), IQRafhc75 = wtd.quantile(afhc, q = 0.75, weight = sweightcorrected), maxafhc = max(afhc), minafhc = min(afhc))
+```
+
+Creacion de estimador de Horvitz Thompson y su intervalo de confianza para la media para la poblacion en general.
+
+```{r}
+
+
+#Function for creation a confidence interval using a Horvtiz Thompson Estimator, using Taylor linearization to calculate variance
+
+htintmean <- function(varname, inclusion, stratclus){
+
+  ht <-horvitzThompson(varname, pi = inclusion, var_est = TRUE, strata = stratclus)
+  
+  htSE <- sqrt(ht$pop_mean_var) 
+  
+  htME <- 1.96*htSE
+  
+  minint <- ht$pop_mean - htME
+  maxint <- ht$pop_mean + htME
+  
+  printres <- tibble(Pop_mean = ht$pop_mean, pop_var = ht$pop_mean_var, StandardError = htSE, MarginError = htME, MinInterval = minint, MaxInterval = maxint)
+  return(printres)
+  }
+```
+
+Creacion de intervalo de confianza para la media de puntaje z de la poblacion en general
+
+```{r}
+
+htintmean(trabajocampo$puntajez, trabajocampo$inclprobcorr, trabajocampo$cluster)
+
+```
+
+Creacion de intervalo de confianza para la media de puntaje z por sexo
+
+```{r}
+print("Femenino")
+htintmean(FemProp$puntajez, FemProp$inclprobcorr, FemProp$cluster)
+
+print("Masculino")
+htintmean(MascProp$puntajez, MascProp$inclprobcorr, MascProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de puntaje z por area historica
+```{r}
+print("Urbano")
+htintmean(UrbanProp$puntajez, UrbanProp$inclprobcorr, UrbanProp$cluster)
+
+print("Rural")
+htintmean(RuralProp$puntajez, RuralProp$inclprobcorr, RuralProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de puntaje z por sector historico
+```{r}
+print("Oficial")
+htintmean(OficialProp$puntajez, OficialProp$inclprobcorr, OficialProp$cluster)
+
+print("Cooperativa")
+htintmean(CoopProp$puntajez, CoopProp$inclprobcorr, CoopProp$cluster)
+
+print("Privado")
+htintmean(PrivProp$puntajez, PrivProp$inclprobcorr, PrivProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de puntaje z por grado
+```{r}
+print("1ero Basico")
+htintmean(Prop1$puntajez, Prop1$inclprobcorr, Prop1$cluster)
+
+print("2do Basico")
+htintmean(Prop2$puntajez, Prop2$inclprobcorr, Prop2$cluster)
+
+print("3ero Basico")
+htintmean(Prop3$puntajez, Prop3$inclprobcorr, Prop3$cluster)
+```
+
+creacion de intervalo de confianza para la media de puntaje z por edad
+```{r}
+print("12")
+htintmean(Prop12$puntajez, Prop12$inclprobcorr, Prop12$cluster)
+
+print("13")
+htintmean(Prop13$puntajez, Prop13$inclprobcorr, Prop13$cluster)
+
+print("14")
+htintmean(Prop14$puntajez, Prop14$inclprobcorr, Prop14$cluster)
+
+print("15")
+htintmean(Prop15$puntajez, Prop15$inclprobcorr, Prop15$cluster)
+
+print("16")
+htintmean(Prop16$puntajez, Prop16$inclprobcorr, Prop16$cluster)
+
+```
+
+Creacion de intervalo de confianza para la media de PAQA de la poblacion en general
+
+```{r}
+
+htintmean(trabajocampo$paqa, trabajocampo$inclprobcorr, trabajocampo$cluster)
+
+```
+
+Creacion de intervalo de confianza para la media de PAQA por sexo
+
+```{r}
+print("Femenino")
+htintmean(FemProp$paqa, FemProp$inclprobcorr, FemProp$cluster)
+
+print("Masculino")
+htintmean(MascProp$paqa, MascProp$inclprobcorr, MascProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de PAQA por area historica
+```{r}
+print("Urbano")
+htintmean(UrbanProp$paqa, UrbanProp$inclprobcorr, UrbanProp$cluster)
+
+print("Rural")
+htintmean(RuralProp$paqa, RuralProp$inclprobcorr, RuralProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de PAQA por sector historico
+```{r}
+print("Oficial")
+htintmean(OficialProp$paqa, OficialProp$inclprobcorr, OficialProp$cluster)
+
+print("Cooperativa")
+htintmean(CoopProp$paqa, CoopProp$inclprobcorr, CoopProp$cluster)
+
+print("Privado")
+htintmean(PrivProp$paqa, PrivProp$inclprobcorr, PrivProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de PAQA por sector historico
+```{r}
+print("1ero Basico")
+htintmean(Prop1$paqa, Prop1$inclprobcorr, Prop1$cluster)
+
+print("2do Basico")
+htintmean(Prop2$paqa, Prop2$inclprobcorr, Prop2$cluster)
+
+print("3ero Basico")
+htintmean(Prop3$paqa, Prop3$inclprobcorr, Prop3$cluster)
+```
+
+creacion de intervalo de confianza para la media de PAQA por sector historico
+```{r}
+print("12")
+htintmean(Prop12$paqa, Prop12$inclprobcorr, Prop12$cluster)
+
+print("13")
+htintmean(Prop13$paqa, Prop13$inclprobcorr, Prop13$cluster)
+
+print("14")
+htintmean(Prop14$paqa, Prop14$inclprobcorr, Prop14$cluster)
+
+print("15")
+htintmean(Prop15$paqa, Prop15$inclprobcorr, Prop15$cluster)
+
+print("16")
+htintmean(Prop16$paqa, Prop16$inclprobcorr, Prop16$cluster)
+
+```
+
+Creacion de intervalo de confianza para la media de AFHC de la poblacion en general
+
+```{r}
+
+htintmean(trabajocampo$afhc, trabajocampo$inclprobcorr, trabajocampo$cluster)
+
+```
+
+Creacion de intervalo de confianza para la media de AFHC por sexo
+
+```{r}
+print("Femenino")
+htintmean(FemProp$afhc, FemProp$inclprobcorr, FemProp$cluster)
+
+print("Masculino")
+htintmean(MascProp$afhc, MascProp$inclprobcorr, MascProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de AFHC por area historica
+```{r}
+print("Urbano")
+htintmean(UrbanProp$afhc, UrbanProp$inclprobcorr, UrbanProp$cluster)
+
+print("Rural")
+htintmean(RuralProp$afhc, RuralProp$inclprobcorr, RuralProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de AFHC por sector historico
+```{r}
+print("Oficial")
+htintmean(OficialProp$afhc, OficialProp$inclprobcorr, OficialProp$cluster)
+
+print("Cooperativa")
+htintmean(CoopProp$afhc, CoopProp$inclprobcorr, CoopProp$cluster)
+
+print("Privado")
+htintmean(PrivProp$afhc, PrivProp$inclprobcorr, PrivProp$cluster)
+```
+
+creacion de intervalo de confianza para la media de AFHC por sector historico
+```{r}
+print("1ero Basico")
+htintmean(Prop1$afhc, Prop1$inclprobcorr, Prop1$cluster)
+
+print("2do Basico")
+htintmean(Prop2$afhc, Prop2$inclprobcorr, Prop2$cluster)
+
+print("3ero Basico")
+htintmean(Prop3$afhc, Prop3$inclprobcorr, Prop3$cluster)
+```
+
+creacion de intervalo de confianza para la media de AFHC por sector historico
+```{r}
+print("12")
+htintmean(Prop12$afhc, Prop12$inclprobcorr, Prop12$cluster)
+
+print("13")
+htintmean(Prop13$afhc, Prop13$inclprobcorr, Prop13$cluster)
+
+print("14")
+htintmean(Prop14$afhc, Prop14$inclprobcorr, Prop14$cluster)
+
+print("15")
+htintmean(Prop15$afhc, Prop15$inclprobcorr, Prop15$cluster)
+
+print("16")
+htintmean(Prop16$afhc, Prop16$inclprobcorr, Prop16$cluster)
+
+```
+
+
+
+```{r}
+
+htpropint <- function(dataframe){
+ sumpsustrata<-dataframe %>%
+  mutate(sobobweight = sweightcorrected*sobob)%>%
+  group_by(cluster, upm)%>%
+  summarise(sumclusterw = sum(sweightcorrected), sumcluster1 = sum(sobobweight))
+
+nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+
+nhinverse <-nh %>%
+  group_by(cluster)%>%
+  summarise(nh = sumcluster/(sumcluster-1))
+
+xh <- sumpsustrata %>% group_by(cluster)%>% summarise(xh = sum(sumcluster1))
+
+yh <- sumpsustrata %>% group_by(cluster)%>% summarise(yh = sum(sumclusterw))
+
+#Construct data frame to enable subtratcion of Xh
+xhi <- merge(sumpsustrata, xh, by = "cluster", all = TRUE)
+X <-merge(xhi, nh, by = "cluster", all = TRUE)
+
+#construct data frame to enable subtraction of yh
+yhi <-merge(sumpsustrata, yh, by = "cluster", all = TRUE)
+Y <- merge(yhi, nh, by = "cluster", all = TRUE)
+
+sumX <- ( X$sumcluster1 - (X$xh/X$sumcluster))
+sumY <- (Y$sumclusterw - (Y$yh/Y$sumcluster))
+R <-(sum(sumpsustrata$sumcluster1)/sum(sumpsustrata$sumclusterw))
+
+SumXY <- sum(sumX - R*(sumY))
+
+sumnhinv <- sum(nhinverse$nh)
+
+variance <- ((1/sum(sumpsustrata$sumclusterw)^2)*sumnhinv*(SumXY^2))
+
+SE <-sqrt(variance)
+
+ME<-SE*1.96
+
+MaxInterval <- R + ME
+
+MinInterval <- R - ME
+
+valuestibble <- tibble(R, variance, SE, MaxInterval, MinInterval)
+return(valuestibble)
+}
+```
+
+
+ANALISIS de correlacion de datos de PAQA con puntaje Z 
+```{r}
+PN<-trabajocampo %>%
+     filter(sobob == "0")
+
+PNN <- trabajocampo %>%
+    filter(sobob == "1")
+
+
+
+wtd.cor(trabajocampo$puntajez, trabajocampo$paqa, weight = trabajocampo$sweightcorrected)
+
+
+ggplot(trabajocampo, aes(x = puntajez, y = paqa, weight = sweightcorrected)) + geom_point() + scale_x_continuous(name = "Puntaje Z") + scale_y_continuous(name = "Puntaje PAQ-A")+theme_minimal()
+wtd.t.test(PN$paqa, PNN$paqa, weight = PN$sweightcorrected, weighty = PNN$sweightcorrected)
+
+```
+
+Analisis de correlacion de datos de AFHC con puntaje Z
+```{r}
+
+
+wtd.cor(trabajocampo$afhc, trabajocampo$puntajez, weight = trabajocampo$afhc)
+
+
+ggplot(trabajocampo, aes(x = puntajez, y = afhc, weight = sweightcorrected)) + geom_point(alpha = 0.8)+scale_x_continuous(name = "Puntaje Z")+ scale_y_continuous(name = "Puntaje AFHC")+theme_minimal()
+
+wtd.t.test(PN$afhc, PNN$afhc, weight = PN$sweightcorrected, weighty = PNN$sweightcorrected)
+
+
+```
+
+Calculo de la varianza para proporciones
+```{r}
+#Variance and confidence interval calculator function for proportions
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclust <- function(dataframe){
+    c1 <- subset(dataframe, cluster == 1, select=c(sobob,sweightcorrected))
+    c2 <- subset(dataframe, cluster == 2, select=c(sobob,sweightcorrected))
+    c3 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c4 <- subset(dataframe, cluster == 4, select=c(sobob,sweightcorrected))
+    c5 <- subset(dataframe, cluster == 5, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+    c8 <- subset(dataframe, cluster == 8, select=c(sobob,sweightcorrected))
+    
+    clusterlist <- list(c1,c2,c3,c4,c5,c6,c7,c8)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfprop <- function(dataframe){
+  
+  p<-wtdpercclust(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/(nhv)))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+intconfprop(trabajocampo)
+
+```
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para Femenino
+```{r}
+intconfprop(FemProp)
+```
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para Masculino
+```{r}
+intconfprop(MascProp)
+```
+
+Intervalo de confianza de proporcion de estudianets con sobrepeso y obesidad para Urbano
+
+```{r}
+
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclusturban <- function(dataframe){
+ 
+    c5 <- subset(dataframe, cluster == 5, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+    c8 <- subset(dataframe, cluster == 8, select=c(sobob,sweightcorrected))
+    
+    clusterlist <- list(c5,c6,c7,c8)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfpropurban <- function(dataframe){
+  
+  p<-wtdpercclusturban(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/nhv))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+
+intconfpropurban(UrbanProp)
+```
+
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para Rural
+
+```{r}
+
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclustrural <- function(dataframe){
+ 
+    c5 <- subset(dataframe, cluster == 1, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 2, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c8 <- subset(dataframe, cluster == 4, select=c(sobob,sweightcorrected))
+    
+    clusterlist <- list(c5,c6,c7,c8)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfproprural <- function(dataframe){
+  
+  p<-wtdpercclustrural(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/nhv))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+
+intconfproprural(RuralProp)
+
+```
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para Oficial
+```{r}
+#Variance and confidence interval calculator function for proportions
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclustofi <- function(dataframe){
+    c1 <- subset(dataframe, cluster == 1, select=c(sobob,sweightcorrected))
+    c2 <- subset(dataframe, cluster == 2, select=c(sobob,sweightcorrected))
+    c3 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c4 <- subset(dataframe, cluster == 4, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+    c8 <- subset(dataframe, cluster == 8, select=c(sobob,sweightcorrected))
+    
+    clusterlist <- list(c1,c2,c3,c4,c6,c7,c8)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfpropofi <- function(dataframe){
+  
+  p<-wtdpercclustofi(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/(nhv)))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+intconfpropofi(OficialProp)
+
+```
+
+Intervalo de confianza proporciones de estudiantes con sobrepeso y obesidad para Privado
+```{r}
+#Variance and confidence interval calculator function for proportions
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclustpriv <- function(dataframe){
+    
+    c3 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c4 <- subset(dataframe, cluster == 4, select=c(sobob,sweightcorrected))
+    c5 <- subset(dataframe, cluster == 5, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+
+    
+    clusterlist <- list(c3,c4,c5,c6,c7)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfproppriv <- function(dataframe){
+  
+  p<-wtdpercclustpriv(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/(nhv)))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+
+intconfproppriv(PrivProp)
+```
+
+Intervalo de confianza proporciones de estudiantes con sobrepeso y obseidad para Cooperativa
+```{r}
+#Variance and confidence interval calculator function for proportions
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclustcoop <- function(dataframe){
+    
+    c3 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c4 <- subset(dataframe, cluster == 4, select=c(sobob,sweightcorrected))
+    
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+   
+    
+    clusterlist <- list(c3,c4,c6,c7)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    
+    return(weightedpercclus)
+}
+
+intconfpropcoop <- function(dataframe){
+  
+  p<-wtdpercclustcoop(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/(nhv)))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+
+intconfpropcoop(CoopProp)
+```
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para 1er grado
+```{r}
+intconfprop(Prop1)
+```
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para 2do grado
+```{r}
+intconfprop(Prop2)
+```
+
+Intervalo de confianza de proporcion de estudiantes con sobrepeso y obesidad para 3er grado
+```{r}
+intconfprop(Prop3)
+```
+Intervalo de confianza proporciones de estudiantes con sobrepeso y obesidad para 12 años
+```{r}
+#Variance and confidence interval calculator function for proportions
+weightedperc <- function(dataframe){
+  
+  weightedpercdata <- dataframe
+  
+  percent <- wpct(weightedpercdata$sobob, weightedpercdata$sweightcorrected)
+  
+  listpercent <- as.list(percent)
+  
+  names(listpercent) <- c("pn", "pnn") 
+  return(listpercent$pnn)
+  
+}
+wtdpercclustprop12 <- function(dataframe){
+    c1 <- subset(dataframe, cluster == 1, select=c(sobob,sweightcorrected))
+    c2 <- subset(dataframe, cluster == 2, select=c(sobob,sweightcorrected))
+    c3 <- subset(dataframe, cluster == 3, select=c(sobob,sweightcorrected))
+    c5 <- subset(dataframe, cluster == 5, select=c(sobob,sweightcorrected))
+    c6 <- subset(dataframe, cluster == 6, select=c(sobob,sweightcorrected)) 
+    c7 <- subset(dataframe, cluster == 7, select=c(sobob,sweightcorrected))
+    c8 <- subset(dataframe, cluster == 8, select=c(sobob,sweightcorrected))
+    
+    clusterlist <- list(c1,c2,c3,c5,c6,c7,c8)
+    
+    weightedpercclus<-sapply(clusterlist,weightedperc)
+    weightedpercclus <- append(weightedpercclus, 1, after = 3)
+    return(weightedpercclus)
+    
+}
+
+intconfprop12 <- function(dataframe){
+  
+  p<-wtdpercclustprop12(dataframe)
+  q<-(1-p)
+  
+  nh <-dataframe %>%
+  group_by(cluster)%>%
+  summarise(sumcluster= n_distinct(upm))
+  
+  n <- sum(nh$sumcluster)
+  
+  nhn<-merge(nh,n, all.x = TRUE)
+ 
+  nhv <-as.vector(nhn$sumcluster)
+  nv <- as.vector(nhn$y)
+  
+  w <-(nhv/nv)^2
+  
+  var <- sum(w*((p*q)/(nhv)))
+  
+  SEp <-sqrt(var)
+  
+  MEp <- 1.96*SEp
+  
+  pst <- mean(p)
+  
+  MaxIntervalp <-pst + MEp
+  MinIntervalp <- pst - MEp
+  
+  
+  
+  tib <- tibble(pst,var,SEp, MinIntervalp, MaxIntervalp)
+  
+  return(tib)
+
+}
+
+
+
+intconfprop12(Prop12)
+
+```
+Intervalo de confianza proporcion de estudiantes con sobrepeso y obesidad para 13 años
+```{r}
+intconfprop(Prop13)
+```
+Intervalo de confianza proporcion de estudiantes con sobrepeso y obesidad para 14 años
+```{r}
+intconfprop(Prop14)
+```
+Intervalo de confianza proporcion de estudiantes con sobrepeso y obesidad para 15 años
+```{r}
+intconfprop(Prop15)
+```
+Intervalo de confianza proporcion de estudiantes con sobrepeso y obesidad para 16 años
+```{r}
+intconfprop(Prop16)
+```
+
+Prueba de hipotesis para dos colas de Masculino y Femenino con factor de expansion corregido
+
+```{r}
+hypothesispropsex <- function(dataframex,dataframey){
+
+x<-intconfprop(dataframex)  
+y<-intconfprop(dataframey)  
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = FALSE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+
+hypothesispropsex(MascProp,FemProp)
+```
+
+
+Prueba de hipotesis para dos colas de Masculino y Femenino con no corregida por factor de expansion
+
+```{r}
+hypothesispropsex <- function(dataframex,dataframey){
+x<-intconfprop(dataframex)  
+y<-intconfprop(dataframey) 
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nx + py*ny)/(nx + ny))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nx)+((pp*qp)/ny))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = FALSE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+
+hypothesispropsex(MascProp,FemProp)
+```
+
+Prueba de hipotesis para urbano rural utilizando proporcion corregida con factor de expansion
+```{r}
+hypothesisproparea <- function(dataframex,dataframey){
+
+x<-intconfpropurban(dataframex)  
+y<-intconfproprural(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = FALSE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesisproparea(UrbanProp, RuralProp)
+```
+
+Prueba de hipotesis para urbano rural utilizando proporcion no corregida con factor de expansion
+```{r}
+hypothesisproparea <- function(dataframex,dataframey){
+
+x<-intconfpropurban(dataframex)  
+y<-intconfproprural(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nx + py*ny)/(nx + ny))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nx)+((pp*qp)/ny))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = FALSE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesisproparea(UrbanProp, RuralProp)
+```
+
+
+Prueba de hipotesis para Oficial Cooperativa utilizando proporcion corregida con factor de expansion
+```{r}
+hypothesispropsector1 <- function(dataframex,dataframey){
+
+x<-intconfpropofi(dataframex)  
+y<-intconfpropcoop(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = TRUE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesispropsector1(OficialProp, CoopProp)
+```
+
+
+Prueba de hipotesis para Oficial Privado utilizando proporcion corregida con factor de expansion
+```{r}
+hypothesispropsector2 <- function(dataframex,dataframey){
+
+x<-intconfpropofi(dataframex)  
+y<-intconfproppriv(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = TRUE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesispropsector2(OficialProp, PrivProp)
+```
+
+Prueba de hipotesis para Privado Cooperativa utilizando proporcion corregida con factor de expansion
+```{r}
+hypothesispropsector3 <- function(dataframex,dataframey){
+
+x<-intconfproppriv(dataframex)  
+y<-intconfpropcoop(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = FALSE)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesispropsector3(PrivProp, CoopProp)
+```
+
+Prueba de hipotesis para dos colas de 1ero y 2do con factor de expansion corregido
+
+```{r}
+hypothesisprop <- function(dataframex,dataframey, lowertail){
+
+x<-intconfprop(dataframex)  
+y<-intconfprop(dataframey)  
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = lowertail)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+
+hypothesisprop(Prop1,Prop2, FALSE)
+```
+
+
+Prueba de hipotesis para dos colas de 2do y 3ero con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop2,Prop3, TRUE)
+```
+
+Prueba de hipotesis para dos colas de 2do y 3ero con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop1,Prop3, TRUE)
+```
+
+
+Prueba de hipotesis para 12-13 utilizando proporcion corregida con factor de expansion
+```{r}
+hypothesisprop12 <- function(dataframex,dataframey, lowertail){
+
+x<-intconfprop12(dataframex)  
+y<-intconfprop(dataframey)
+
+px<-x$pst
+py<-y$pst
+
+
+nxcor <- sum(dataframex$sweightcorrected)
+nycor <- sum(dataframey$sweightcorrected)
+
+nxcorratio<-(nxcor/(nxcor+ nycor))
+nycorratio<-(nycor/(nxcor+nycor))
+
+dimx <- dim(dataframex)
+dimy <- dim(dataframey)
+nx <- (dimx[1])
+ny  <- (dimy[1])
+
+nxfinal <- ((nx+ny)*nxcorratio)
+nyfinal <- ((nx+ny)*nycorratio)
+
+pp <- ((px*nxfinal + py*nyfinal)/(nxfinal + nyfinal))
+qp <- 1-pp
+
+SE <- sqrt(((pp*qp)/nxfinal)+((pp*qp)/nyfinal))
+
+zvalue <-(px-py)/SE
+
+pvalue <- 2*pnorm(zvalue, lower.tail = lowertail)
+
+result <- tibble(px, py, zvalue, pvalue)
+
+return(result)
+
+}
+hypothesisprop12(Prop12,Prop13, FALSE)
+```
+
+
+Prueba de hipotesis para dos colas de 12 y 14 con factor de expansion corregido
+
+```{r}
+hypothesisprop12(Prop12,Prop14, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 12 y 15 con factor de expansion corregido
+
+```{r}
+hypothesisprop12(Prop12,Prop15, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 12 y 16 con factor de expansion corregido
+
+```{r}
+hypothesisprop12(Prop12,Prop16, FALSE)
+```
+
+
+Prueba de hipotesis para dos colas de 13 y 14 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop13,Prop14, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 13 y 15 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop13,Prop15, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 13 y 16 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop13,Prop16, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 14 y 15 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop14,Prop15, FALSE)
+```
+
+Prueba de hipotesis para dos colas de 14 y 16 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop14,Prop16, TRUE)
+```
+
+Prueba de hipotesis para dos colas de 15 y 16 con factor de expansion corregido
+
+```{r}
+hypothesisprop(Prop15,Prop16, TRUE)
+```
+
+
+Prueba de chi cuadrada para edad y sobrepeso y obesidad, tratando variable como variable dicotomica 1,0, corregida con peso 
+```{r}
+
+wtd.chi.sq(trabajocampo$edad, as.factor(trabajocampo$sobob), weight = trabajocampo$sweightcorrected)
+```
+
+Prueba de chi cuadrada para sexo y sobrepeso y obesidad, tratando variable como variable dicotomica 1,0, corregida por peso
+
+```{r}
+
+
+wtd.chi.sq(trabajocampo$sexo, as.factor(trabajocampo$sobob), weight = trabajocampo$sweightcorrected)
+```
+
+Prueba de chi cuadrada para area historica y sobrepeso y obesidad, tratando variable como variable dicotomica 1,0 corregida por peso
+
+```{r}
+
+
+wtd.chi.sq(trabajocampo$areahist, as.factor(trabajocampo$sobob), weight = trabajocampo$sweightcorrected)
+```
+
+
+
+Prueba de chi cuadrada para sector historica y sobrepeso y obesidad, tratando variable como variable dicotomica 1,0 corregida por peso
+
+```{r}
+
+
+wtd.chi.sq(trabajocampo$sectorhist, as.factor(trabajocampo$sobob), weight = trabajocampo$sweightcorrected)
+```
+
+
+Prueba de chi cuadrada para grado y sobrepeso y obesidad, tratando variable como variable dicotomica 1,0 corregida por peso
+
+
+```{r}
+
+
+wtd.chi.sq(trabajocampo$grado, as.factor(trabajocampo$sobob), weight = trabajocampo$sweightcorrected)
+
+```
+
+
+Prueba de T de comparacion de medias de puntaje z entre hombres y mujeres
+```{r}
+
+
+
+wtd.t.test(MascProp$puntajez, FemProp$puntajez, MascProp$sweightcorrected, FemProp$sweightcorrected)
+
+```
+
+Prueba de T de comparacion de medias de puntaje z entre Urbano y Rural
+```{r}
+
+
+
+wtd.t.test(RuralProp$puntajez, UrbanProp$puntajez, RuralProp$sweightcorrected, UrbanProp$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de puntajez a de Sector historico 
+```{r}
+print("OFICIAL / COOPERATIVA")
+wtd.t.test(OficialProp$puntajez, CoopProp$puntajez, OficialProp$sweightcorrected, CoopProp$sweightcorrected)
+
+print("OFICIAL / PRIVADO")
+wtd.t.test(OficialProp$puntajez, PrivProp$puntajez, OficialProp$sweightcorrected, PrivProp$sweightcorrected)
+
+print("PRIVADO / COOPERATIVA")
+wtd.t.test(PrivProp$puntajez, CoopProp$puntajez, PrivProp$sweightcorrected, CoopProp$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de puntajez por grado
+```{r}
+print("1ero / 2do")
+wtd.t.test(Prop1$puntajez, Prop2$puntajez, Prop1$sweightcorrected, Prop2$sweightcorrected)
+
+print("2do / 3ero")
+wtd.t.test(Prop2$puntajez, Prop3$puntajez, Prop2$sweightcorrected, Prop3$sweightcorrected)
+
+print("1ero / 3ero")
+wtd.t.test(Prop1$puntajez , Prop3$puntajez, Prop1$sweightcorrected, Prop3$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de puntajez  de edad
+```{r}
+print("12 / 13")
+wtd.t.test(Prop12$puntajez, Prop13$puntajez, Prop12$sweightcorrected, Prop13$sweightcorrected)
+
+print("12 / 14")
+wtd.t.test(Prop12$puntajez, Prop14$puntajez, Prop12$sweightcorrected, Prop14$sweightcorrected)
+
+print("12 / 15")
+wtd.t.test(Prop12$puntajez, Prop15$puntajez, Prop12$sweightcorrected, Prop15$sweightcorrected)
+
+print("12 / 16")
+wtd.t.test(Prop12$puntajez, Prop16$puntajez, Prop12$sweightcorrected, Prop16$sweightcorrected)
+
+print("13 / 14")
+wtd.t.test(Prop13$puntajez, Prop14$puntajez, Prop13$sweightcorrected, Prop14$sweightcorrected)
+
+print("13 / 15")
+wtd.t.test(Prop13$puntajez, Prop15$puntajez, Prop13$sweightcorrected, Prop15$sweightcorrected)
+
+print("13 / 16")
+wtd.t.test(Prop13$puntajez, Prop16$puntajez, Prop13$sweightcorrected, Prop16$sweightcorrected)
+
+print("14 / 15")
+wtd.t.test(Prop14$puntajez, Prop15$puntajez, Prop14$sweightcorrected, Prop15$sweightcorrected)
+
+print("14 / 16")
+wtd.t.test(Prop14$puntajez, Prop16$puntajez, Prop14$sweightcorrected, Prop16$sweightcorrected)
+
+print("15 / 16")
+wtd.t.test(Prop15$puntajez, Prop16$puntajez, Prop15$sweightcorrected, Prop16$sweightcorrected)
+```
+
+Prueba de hipotesis 
+```{r}
+hipotesis <- function(dataframe){
+p<-intconfprop(dataframe)
+
+px<-p$pst
+pSE<-p$SEp
+pnull <- 0.25
+
+pointest <- (px-pnull)
+
+zscore<-pointest/pSE
+
+pvalue <- 2*pnorm(zscore, lower.tail = FALSE)
+
+result <- tibble(px, pnull, zscore, pvalue)
+
+return(result)
+}
+hipotesis(trabajocampo)
+
+```
+
+Prueba de T de comparacion de medias de paq a entre hombres y mujeres
+```{r}
+
+
+
+wtd.t.test(MascProp$paqa, FemProp$paqa, MascProp$sweightcorrected, FemProp$sweightcorrected)
+
+```
+
+Prueba de T de comparacion de medias de paq a entre Urbano y Rural
+```{r} 
+
+
+
+wtd.t.test(RuralProp$paqa, UrbanProp$paqa, RuralProp$sweightcorrected, UrbanProp$sweightcorrected)
+
+```
+
+
+Pairwise T Test para comparacion de medias de paq a de Sector historico 
+```{r}
+print("OFICIAL / COOPERATIVA")
+wtd.t.test(OficialProp$paqa, CoopProp$paqa, OficialProp$sweightcorrected, CoopProp$sweightcorrected)
+
+print("OFICIAL / PRIVADO")
+wtd.t.test(OficialProp$paqa, PrivProp$paqa, OficialProp$sweightcorrected, PrivProp$sweightcorrected)
+
+print("PRIVADO / COOPERATIVA")
+wtd.t.test(PrivProp$paqa, CoopProp$paqa, PrivProp$sweightcorrected, CoopProp$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de paq a de grado
+```{r}
+print("1ero / 2do")
+wtd.t.test(Prop1$paqa, Prop2$paqa, Prop1$sweightcorrected, Prop2$sweightcorrected)
+
+print("2do / 3ero")
+wtd.t.test(Prop2$paqa, Prop3$paqa, Prop2$sweightcorrected, Prop3$sweightcorrected)
+
+print("1ero / 3ero")
+wtd.t.test(Prop1$paqa, Prop3$paqa, Prop1$sweightcorrected, Prop3$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de paq a de edad
+```{r}
+print("12 / 13")
+wtd.t.test(Prop12$paqa, Prop13$paqa, Prop12$sweightcorrected, Prop13$sweightcorrected)
+
+print("12 / 14")
+wtd.t.test(Prop12$paqa, Prop14$paqa, Prop12$sweightcorrected, Prop14$sweightcorrected)
+
+print("12 / 15")
+wtd.t.test(Prop12$paqa, Prop15$paqa, Prop12$sweightcorrected, Prop15$sweightcorrected)
+
+print("12 / 16")
+wtd.t.test(Prop12$paqa, Prop16$paqa, Prop12$sweightcorrected, Prop16$sweightcorrected)
+
+print("13 / 14")
+wtd.t.test(Prop13$paqa, Prop14$paqa, Prop13$sweightcorrected, Prop14$sweightcorrected)
+
+print("13 / 15")
+wtd.t.test(Prop13$paqa, Prop15$paqa, Prop13$sweightcorrected, Prop15$sweightcorrected)
+
+print("13 / 16")
+wtd.t.test(Prop13$paqa, Prop16$paqa, Prop13$sweightcorrected, Prop16$sweightcorrected)
+
+print("14 / 15")
+wtd.t.test(Prop14$paqa, Prop15$paqa, Prop14$sweightcorrected, Prop15$sweightcorrected)
+
+print("14 / 16")
+wtd.t.test(Prop14$paqa, Prop16$paqa, Prop14$sweightcorrected, Prop16$sweightcorrected)
+
+print("15 / 16")
+wtd.t.test(Prop15$paqa, Prop16$paqa, Prop15$sweightcorrected, Prop16$sweightcorrected)
+```
+
+
+Prueba de T de comparacion de medias de afhc a entre hombres y mujeres
+```{r}
+
+
+
+wtd.t.test(MascProp$afhc, FemProp$afhc, MascProp$sweightcorrected, FemProp$sweightcorrected)
+
+```
+
+Prueba de T de comparacion de medias de afhc entre Urbano y Rural
+```{r} 
+
+
+
+wtd.t.test(RuralProp$afhc, UrbanProp$afhc, RuralProp$sweightcorrected, UrbanProp$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de afhc a de Sector historico 
+```{r}
+print("OFICIAL / COOPERATIVA")
+wtd.t.test(OficialProp$afhc, CoopProp$afhc, OficialProp$sweightcorrected, CoopProp$sweightcorrected)
+
+print("OFICIAL / PRIVADO")
+wtd.t.test(OficialProp$afhc, PrivProp$afhc, OficialProp$sweightcorrected, PrivProp$sweightcorrected)
+
+print("PRIVADO / COOPERATIVA")
+wtd.t.test(PrivProp$afhc, CoopProp$afhc, PrivProp$sweightcorrected, CoopProp$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de afhc por grado
+```{r}
+print("1ero / 2do")
+wtd.t.test(Prop1$afhc, Prop2$afhc, Prop1$sweightcorrected, Prop2$sweightcorrected)
+
+print("2do / 3ero")
+wtd.t.test(Prop2$afhc, Prop3$afhc, Prop2$sweightcorrected, Prop3$sweightcorrected)
+
+print("1ero / 3ero")
+wtd.t.test(Prop1$afhc , Prop3$afhc, Prop1$sweightcorrected, Prop3$sweightcorrected)
+
+```
+
+Pairwise T Test para comparacion de medias de afhc de edad
+```{r}
+print("12 / 13")
+wtd.t.test(Prop12$afhc, Prop13$afhc, Prop12$sweightcorrected, Prop13$sweightcorrected)
+
+print("12 / 14")
+wtd.t.test(Prop12$afhc, Prop14$afhc, Prop12$sweightcorrected, Prop14$sweightcorrected)
+
+print("12 / 15")
+wtd.t.test(Prop12$afhc, Prop15$afhc, Prop12$sweightcorrected, Prop15$sweightcorrected)
+
+print("12 / 16")
+wtd.t.test(Prop12$afhc, Prop16$afhc, Prop12$sweightcorrected, Prop16$sweightcorrected)
+
+print("13 / 14")
+wtd.t.test(Prop13$afhc, Prop14$afhc, Prop13$sweightcorrected, Prop14$sweightcorrected)
+
+print("13 / 15")
+wtd.t.test(Prop13$afhc, Prop15$afhc, Prop13$sweightcorrected, Prop15$sweightcorrected)
+
+print("13 / 16")
+wtd.t.test(Prop13$afhc, Prop16$afhc, Prop13$sweightcorrected, Prop16$sweightcorrected)
+
+print("14 / 15")
+wtd.t.test(Prop14$afhc, Prop15$afhc, Prop14$sweightcorrected, Prop15$sweightcorrected)
+
+print("14 / 16")
+wtd.t.test(Prop14$afhc, Prop16$afhc, Prop14$sweightcorrected, Prop16$sweightcorrected)
+
+print("15 / 16")
+wtd.t.test(Prop15$afhc, Prop16$afhc, Prop15$sweightcorrected, Prop16$sweightcorrected)
+```
